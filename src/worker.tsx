@@ -24,4 +24,16 @@ app.get('/name-definition/:table{competence|aspect|level}/:field/:id', (c) => {
 		</div>
 	);
 });
+
+app.get('/db/elements', async (c) => {
+	const sql = 'SELECT * FROM acm_elements';
+	const { results } = await c.env.DB.prepare(sql).all();
+	return c.json(results);
+})
+app.get('/db/evidences', async (c) => {
+	const sql = 'SELECT * FROM acm_evidences';
+	const { results } = await c.env.DB.prepare(sql).all();
+	return c.json(results);
+});
+
 export default app;
