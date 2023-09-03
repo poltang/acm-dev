@@ -4,11 +4,14 @@
 	"private": true,
 	"scripts": {
 		"dev": "wrangler dev --log-level",
+		"dev:css": "tailwindcss -i ./src/tailwind.css -o ./assets/static/styles.css --watch",
 		"deploy": "wrangler deploy",
 		"start": "wrangler dev"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20230419.0",
+		"@tailwindcss/forms": "^0.5.6",
+		"tailwindcss": "^3.3.3",
 		"typescript": "^5.0.4",
 		"wrangler": "^3.6.0"
 	},

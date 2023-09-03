@@ -230,9 +230,9 @@ export const CompetenceCover = ({ title, type, level }: { title: string; type: s
 );
 
 export const CompetenceDescriptor = ({ item, indicators }: { item: Competence; indicators: Indicator[] }) => {
-	const nameUrl = `/htmx/name-definition-form/competence/name/${item.id}`;
-	const definitionUrl = `/htmx/name-definition-form/competence/definition/${item.id}`;
-	const formUrl = `/htmx/indicators-form/${item.id}`;
+	const nameUrl = `/htmx/name-definition/competence/name/${item.id}/form`;
+	const definitionUrl = `/htmx/name-definition/competence/definition/${item.id}/form`;
+	const formUrl = `/htmx/indicators/${item.id}/form`;
 	return (
 		<Frame>
 			<FrameHeader title="Competence Descriptor" />
@@ -322,8 +322,8 @@ export const IndicatorsFormItem = ({ parent, item }: { parent: string; item: Ind
 }
 
 export const LevelDescriptor = ({ item }: { item: Level }) => {
-	const nameUrl = `/htmx/name-definition-form/level/name/${item.id}`;
-	const definitionUrl = `/htmx/name-definition-form/level/definition/${item.id}`;
+	const nameUrl = `/htmx/name-definition/level/name/${item.id}/form`;
+	const definitionUrl = `/htmx/name-definition/level/definition/${item.id}/form`;
 	return (
 		<Frame>
 			<FrameHeader title={`Level ${item.level}`} />
@@ -337,7 +337,7 @@ export const LevelDescriptor = ({ item }: { item: Level }) => {
 }
 
 export const AspectDescriptor = ({ item, index }: { item: Aspect; index: number }) => {
-	const nameUrl = `/htmx/name-definition-form/aspect/name/${item.id}`;
+	const nameUrl = `/htmx/name-definition/aspect/name/${item.id}/form`;
 	// const definitionUrl = `/htmx/name-definition-form/aspect/definition/${item.id}`;
 	return (
 		<Frame>
@@ -429,7 +429,7 @@ export const DomainElementsBrowser = ({ domain, items, target }: { domain?: stri
 	const id = 'DOM' + ulid();
 	return (
 		<section id={id}>
-			<DomainButtons parent_id={id} selected={domain} />
+			<DomainButtons selected={domain} />
 			{items && items.length > 0 && (
 				<>
 					<div id={target} class="h-[200px] flex flex-col gap-1 overflow-y-scroll mt-2">
@@ -455,7 +455,7 @@ export const DomainElementsBrowser = ({ domain, items, target }: { domain?: stri
 	);
 }
 
-const DomainButtons = ({ parent_id, selected }: { parent_id?: string; selected?: string }) => {
+const DomainButtons = ({ selected }: { selected?: string }) => {
 	return (
 		<div class="text-xs font-semibold">
 			{DOMAINS.map((d) => (

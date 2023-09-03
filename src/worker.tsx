@@ -15,11 +15,13 @@ app.route('/htmx', htmx);
 app.get('/book/:type{one|two}/:section{AA|BB}/:id', (c) => {
 	const { type, section, id } = c.req.param();
 	return c.html(
-		<div>
-			<p>Type: {type}</p>
-			<p>Section: {section}</p>
-			<p>ID: {id}</p>
-		</div>
+		<Layout>
+			<div class="text-xl text-lime-600 leading-6 font-light">
+				<p><span class="inline-block w-[80px]">Type:</span> {type}</p>
+				<p><span class="inline-block w-[80px]">Section:</span> {section}</p>
+				<p><span class="inline-block w-[80px]">ID:</span> {id}</p>
+			</div>
+		</Layout>
 	);
 });
 app.get('/name-definition/:table{competence|aspect|level}/:field/:id', (c) => {

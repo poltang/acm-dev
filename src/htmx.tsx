@@ -151,7 +151,7 @@ htmx.post('/competences', async (c) => {
 			{name}
 		</a>
 	);
-})
+});
 
 // Names and definitions
 
@@ -161,97 +161,89 @@ const mainTables: Record<string, string> = {
 	level: 'acm_levels',
 };
 
-htmx.get('/name-definition/:table{competence|aspect|level}/:field{name|definition}/:id', async (c) => {
-	const { table, field, id } = c.req.param();
-	const sql = `SELECT * FROM ${mainTables[table]} WHERE id=?`;
-	const found = await c.env.DB.prepare(sql).bind(id).first();
-	if (!found) return htmxNotFound(c);
+htmx
+	.get('/name-definition/:table{competence|aspect|level}/:field{name|definition}/:id/:form{form}?', async (c) => {
+		const { table, field, id, form } = c.req.param();
+		const sql = `SELECT * FROM ${mainTables[table]} WHERE id=?`;
+		const found = await c.env.DB.prepare(sql).bind(id).first();
 
-	const item = found as any;
-	const url = `/htmx/name-definition-form/${table}/${field}/${id}`;
-	const label = field == 'name' ? 'Name' : 'Definition';
-	return c.html(<NameOrDefinition item={item} label={label} field={field} url={url} />);
-});
+		if (!found) return htmxNotFound(c);
 
-htmx.get('/name-definition-form/:table{competence|aspect|level}/:field{name|definition}/:id', async (c) => {
-	const { table, field, id } = c.req.param();
+		const item = found as any;
+		if (form) {
+			const url = `/htmx/name-definition/${table}/${field}/${id}`;
+			const label = field == 'name' ? 'Name' : 'Definition';
+			return c.html(<NameOrDefinitionForm item={item} label={label} field={field} url={url} />);
+		}
+		const url = `/htmx/name-definition/${table}/${field}/${id}/form`;
+		const label = field == 'name' ? 'Name' : 'Definition';
+		return c.html(<NameOrDefinition item={item} label={label} field={field} url={url} />);
+	})
+	.put(async (c) => {
+		const { table, field, id } = c.req.param();
+		const body = await c.req.parseBody();
+		const value = (body[field] as string).trim();
 
-	const sql = `SELECT * FROM ${mainTables[table]} WHERE id=?`;
-	const found = await c.env.DB.prepare(sql).bind(id).first();
-	if (!found) return htmxNotFound(c);
+		if (value.length < 6) {
+			c.status(400);
+			return c.body(null);
+		}
 
-	const item = found as any;
-	const url = `/htmx/name-definition/${table}/${field}/${id}`;
-	const label = field == 'name' ? 'Name' : 'Definition';
-	return c.html(<NameOrDefinitionForm item={item} label={label} field={field} url={url} />);
-});
-
-htmx.put('/name-definition/:table{competence|aspect|level}/:field{name|definition}/:id', async (c) => {
-	const { table, field, id } = c.req.param();
-	const body = await c.req.parseBody();
-	const value = (body[field] as string).trim();
-
-	if (value.length < 6) {
-		c.status(400);
-		return c.body(null);
-	}
-
-	const sql = `UPDATE ${mainTables[table]} SET ${field}=? WHERE id=?`;
-	const rs = await c.env.DB.prepare(sql).bind(value, id).run();
-	const item: SimpleItem = {
-		id,
-		name: value,
-		definition: value,
-	};
-	const label = field == 'name' ? 'Name' : 'Definition';
-	const url = `/htmx/name-definition-form/${table}/${field}/${id}`;
-	return c.html(<NameOrDefinition item={item} label={label} field={field} url={url} />);
-});
+		const sql = `UPDATE ${mainTables[table]} SET ${field}=? WHERE id=?`;
+		const rs = await c.env.DB.prepare(sql).bind(value, id).run();
+		const item: SimpleItem = {
+			id,
+			name: value,
+			definition: value,
+		};
+		const label = field == 'name' ? 'Name' : 'Definition';
+		// const url = `/htmx/name-definition-form/${table}/${field}/${id}`;
+		const url = `/htmx/name-definition/${table}/${field}/${id}`;
+		return c.html(<NameOrDefinition item={item} label={label} field={field} url={url} />);
+	});
 
 // Competence indicators
 
-htmx.get('/indicators/:competence_id', async (c) => {
-	const { competence_id } = c.req.param();
-	const sql = `SELECT * FROM acm_indicators WHERE competence_id=?`;
-	const rs = await c.env.DB.prepare(sql).bind(competence_id).all();
-	const items = rs.results as Indicator[];
-	const formUrl = `/htmx/indicators-form/${competence_id}`;
-	return c.html(<GroupedIndicators formUrl={formUrl} items={items} />);
-});
+htmx
+	.get('/indicators/:competence_id/:form{form}?', async (c) => {
+		const { competence_id, form } = c.req.param();
+		const sql = `SELECT * FROM acm_indicators WHERE competence_id=?`;
+		const rs = await c.env.DB.prepare(sql).bind(competence_id).all();
+		const items = rs.results as Indicator[];
 
-htmx.get('/indicators-form/:competence_id', async (c) => {
-	const { competence_id } = c.req.param();
-	const sql = `SELECT * FROM acm_indicators WHERE competence_id=?`;
-	const rs = await c.env.DB.prepare(sql).bind(competence_id).all();
-	const items = rs.results as Indicator[];
-	return c.html(<IndicatorsForm parent="competence" parent_id={competence_id} items={items} />);
-});
+		if (form) {
+			return c.html(<IndicatorsForm parent="competence" parent_id={competence_id} items={items} />);
+		}
 
-htmx.post('/indicators/:competence_id', async (c) => {
-	const { competence_id } = c.req.param();
-	const { name } = await c.req.parseBody();
-	const value = (name as string).trim();
+		// const formUrl = `/htmx/indicators-form/${competence_id}`;
+		const formUrl = `/htmx/indicators/${competence_id}/form`;
+		return c.html(<GroupedIndicators formUrl={formUrl} items={items} />);
+	})
+	.post(async (c) => {
+		const { competence_id } = c.req.param();
+		const { name } = await c.req.parseBody();
+		const value = (name as string).trim();
 
-	if (value.length < 6) {
-		c.status(400);
-		return c.body(null);
-	}
+		if (value.length < 6) {
+			c.status(400);
+			return c.body(null);
+		}
 
-	const id = ulid();
-	const sql = `INSERT INTO acm_indicators (id,competence_id,name) VALUES (?,?,?)`;
-	const rs = await c.env.DB.prepare(sql).bind(id, competence_id, value).run();
-	if (!rs.success) {
-		c.status(500);
-		return c.body(null);
-	}
+		const id = ulid();
+		const sql = `INSERT INTO acm_indicators (id,competence_id,name) VALUES (?,?,?)`;
+		const rs = await c.env.DB.prepare(sql).bind(id, competence_id, value).run();
+		if (!rs.success) {
+			c.status(500);
+			return c.body(null);
+		}
 
-	const item: Indicator = {
-		id,
-		competence_id,
-		name: value,
-	};
-	return c.html(<IndicatorsFormItem parent="competence" item={item} />);
-});
+		const item: Indicator = {
+			id,
+			competence_id,
+			name: value,
+		};
+		return c.html(<IndicatorsFormItem parent="competence" item={item} />);
+	});
 
 htmx.delete('/indicators/:id', async (c) => {
 	const { id } = c.req.param();
@@ -266,48 +258,46 @@ htmx.delete('/indicators/:id', async (c) => {
 
 // Level indicators
 
-htmx.get('/level-indicators/:level_id', async (c) => {
-	const { level_id } = c.req.param();
-	const sql = `SELECT * FROM acm_level_indicators WHERE level_id=?`;
-	const rs = await c.env.DB.prepare(sql).bind(level_id).all();
-	const items = rs.results as LevelIndicator[];
-	const formUrl = `/htmx/level-indicators-form/${level_id}`;
-	return c.html(<GroupedIndicators formUrl={formUrl} items={items} />);
-});
+htmx
+	.get('/level-indicators/:level_id/:form{form}?', async (c) => {
+		const { level_id, form } = c.req.param();
+		const sql = `SELECT * FROM acm_level_indicators WHERE level_id=?`;
+		const rs = await c.env.DB.prepare(sql).bind(level_id).all();
+		const items = rs.results as LevelIndicator[];
 
-htmx.get('/level-indicators-form/:level_id', async (c) => {
-	const { level_id } = c.req.param();
-	const sql = `SELECT * FROM acm_level_indicators WHERE level_id=?`;
-	const rs = await c.env.DB.prepare(sql).bind(level_id).all();
-	const items = rs.results as LevelIndicator[];
-	return c.html(<IndicatorsForm parent="level" parent_id={level_id} items={items} />);
-});
+		if (form) {
+			return c.html(<IndicatorsForm parent="level" parent_id={level_id} items={items} />);
+		}
 
-htmx.post('/level-indicators/:level_id', async (c) => {
-	const { level_id } = c.req.param();
-	const { name } = await c.req.parseBody();
-	const value = (name as string).trim();
+		// const formUrl = `/htmx/level-indicators-form/${level_id}`;
+		const formUrl = `/htmx/level-indicators/${level_id}/form`;
+		return c.html(<GroupedIndicators formUrl={formUrl} items={items} />);
+	})
+	.post(async (c) => {
+		const { level_id } = c.req.param();
+		const { name } = await c.req.parseBody();
+		const value = (name as string).trim();
 
-	if (value.length < 6) {
-		c.status(400);
-		return c.body(null);
-	}
+		if (value.length < 6) {
+			c.status(400);
+			return c.body(null);
+		}
 
-	const id = ulid();
-	const sql = `INSERT INTO acm_level_indicators (id,level_id,name) VALUES (?,?,?)`;
-	const rs = await c.env.DB.prepare(sql).bind(id, level_id, name).run();
-	if (!rs.success) {
-		c.status(500);
-		return c.body(null);
-	}
+		const id = ulid();
+		const sql = `INSERT INTO acm_level_indicators (id,level_id,name) VALUES (?,?,?)`;
+		const rs = await c.env.DB.prepare(sql).bind(id, level_id, name).run();
+		if (!rs.success) {
+			c.status(500);
+			return c.body(null);
+		}
 
-	const item: LevelIndicator = {
-		id,
-		level_id,
-		name: name as string,
-	};
-	return c.html(<IndicatorsFormItem parent="level" item={item} />);
-});
+		const item: LevelIndicator = {
+			id,
+			level_id,
+			name: name as string,
+		};
+		return c.html(<IndicatorsFormItem parent="level" item={item} />);
+	});
 
 htmx.delete('/level-indicators/:id', async (c) => {
 	const { id } = c.req.param();
@@ -322,43 +312,39 @@ htmx.delete('/level-indicators/:id', async (c) => {
 
 // Aspect elements
 
-htmx.get('/aspect-elements/:aspect_id', async (c) => {
-	const { aspect_id } = c.req.param();
-	const sql = `SELECT * FROM acm_aspect_elements WHERE aspect_id=?`;
-	const rs = await c.env.DB.prepare(sql).bind(aspect_id).all();
-	const items = rs.results as AspectElement[];
-	const formUrl = `/htmx/aspect-elements-form/${aspect_id}`;
-	return c.html(<GroupedElements formUrl={formUrl} items={items} />);
-});
+htmx
+	.get('/aspect-elements/:aspect_id/:form{form}?', async (c) => {
+		const { aspect_id, form } = c.req.param();
+		const sql = `SELECT * FROM acm_aspect_elements WHERE aspect_id=?`;
+		const rs = await c.env.DB.prepare(sql).bind(aspect_id).all();
+		const items = rs.results as AspectElement[];
 
-htmx.get('/aspect-elements-form/:aspect_id', async (c) => {
-	const { aspect_id } = c.req.param();
-	const sql = `SELECT * FROM acm_aspect_elements WHERE aspect_id=?`;
-	const rs = await c.env.DB.prepare(sql).bind(aspect_id).all();
-	const items = rs.results as AspectElement[];
-	return c.html(<AspectElementsForm aspect_id={aspect_id} items={items} />);
-});
+		if (form) {
+			return c.html(<AspectElementsForm aspect_id={aspect_id} items={items} />);
+		}
+		const formUrl = `/htmx/aspect-elements/${aspect_id}/form`;
+		return c.html(<GroupedElements formUrl={formUrl} items={items} />);
+	})
+	.post(async (c) => {
+		const { aspect_id } = c.req.param();
+		const { element_id } = await c.req.parseBody();
+		const sql0 = `SELECT * FROM acm_elements WHERE type IS NOT 'generic' AND id=?`;
+		const elm: any = await c.env.DB.prepare(sql0).bind(element_id).first();
+		console.log('ELM', elm);
+		if (!elm) return htmxNotFound(c);
 
-htmx.post('/aspect-elements/:aspect_id', async (c) => {
-	const { aspect_id } = c.req.param();
-	const { element_id } = await c.req.parseBody();
-	const sql0 = `SELECT * FROM acm_elements WHERE type IS NOT 'generic' AND id=?`;
-	const elm: any = await c.env.DB.prepare(sql0).bind(element_id).first();
-	console.log('ELM', elm);
-	if (!elm) return htmxNotFound(c);
-
-	const id = ulid();
-	const sql1 = `INSERT INTO acm_aspect_elements (id,aspect_id,element_id,name,tool) VALUES (?,?,?,?,?)`;
-	const rs = await c.env.DB.prepare(sql1).bind(id, aspect_id, element_id, elm.name, elm.tool).run();
-	const item: AspectElement = {
-		id,
-		aspect_id,
-		element_id: parseInt(element_id as string),
-		name: elm.name,
-		tool: elm.tool,
-	};
-	return c.html(<AspectElementFormItem item={item} />);
-});
+		const id = ulid();
+		const sql1 = `INSERT INTO acm_aspect_elements (id,aspect_id,element_id,name,tool) VALUES (?,?,?,?,?)`;
+		const rs = await c.env.DB.prepare(sql1).bind(id, aspect_id, element_id, elm.name, elm.tool).run();
+		const item: AspectElement = {
+			id,
+			aspect_id,
+			element_id: parseInt(element_id as string),
+			name: elm.name,
+			tool: elm.tool,
+		};
+		return c.html(<AspectElementFormItem item={item} />);
+	});
 
 htmx.delete('/aspect-elements/:id', async (c) => {
 	const { id } = c.req.param();
@@ -420,7 +406,7 @@ htmx.post('/aspects/:competence_id', async (c) => {
 		name: value,
 	};
 
-	return c.html(<AspectDescriptor item={aspect} index={rs2?.count as number} />);
+	return c.html(<AspectDescriptor item={aspect} index={(rs2?.count as number) -1} />);
 });
 
 
