@@ -1,0 +1,16 @@
+export const DOMAINS: ACMDomain[] = [
+	'EMO',
+	'SELF',
+	'COG',
+	'CREA',
+	'STRAT',
+	'NORM',
+	'COM',
+	'SOC',
+	'LEAD',
+	'TASK',
+	'DEV',
+	'CUST',
+	'CHG',
+	'PRO',
+];
