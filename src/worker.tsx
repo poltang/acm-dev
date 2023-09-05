@@ -4,7 +4,9 @@ import { Hono } from 'hono/quick';
 import { serveStatic } from 'hono/cloudflare-workers';
 import { htmx } from './htmx';
 import Layout from './layout';
-import { ACMHome, AddAspectButton, AddCompetenceButton, AspectDescriptor, BookCover, CompetenceCover, CompetenceDescriptor, CompetenceList, CompetenceNav, LevelDescriptor } from './components';
+import { ACMHome, AddAspectButton, AddCompetenceButton, AspectDescriptor, BookCover, CompetenceCover, CompetenceDescriptor, CompetenceList, CompetenceNav, GroupedEvidencesEditor, GroupedEvidencesView, LevelDescriptor } from './components';
+import { getGroupedEvidences } from './utils';
+import { html } from 'hono/html';
 
 const app = new Hono<{ Bindings: Env }>();
 app.get('/static/*', serveStatic({ root: './' }));
@@ -159,4 +161,109 @@ app.get('/acm/c/:competence_id', async (c) => {
 	);
 });
 
+// Interview batch dev
+const x = {
+	element: 'Mental Flex',
+	items: [
+		{ id: 48, name: 'Perpectives Flexibility' },
+		{ id: 48, name: 'Perpectives Flexibility' },
+		{ id: 48, name: 'Perpectives Flexibility' },
+	],
+};
+app.get('/wwcr', async (c) => {
+	const sql = `SELECT v.id, v.element_id, e.name element, v.name from acm_evidences v left join acm_elements e on v.element_id=e.id where e.tool='wwcr'`;
+	const { results } = await c.env.DB.prepare(sql).all();
+	const map: Record<number, any> = {};
+	results.forEach((row: any) => {
+		if (!map[row.element_id]) {
+			map[row.element_id] = {
+				element_id: row.element_id,
+				element: row.element,
+				items: [],
+			}
+		}
+		map[row.element_id].items.push({
+			id: row.id,
+			name: row.name,
+		});
+	})
+	const array = [];
+	for (let k in map) {
+		array.push(map[k])
+	}
+	// return c.html(<pre>{JSON.stringify(array, null, 2)}</pre>)
+	return c.html(
+		<Layout>
+			<div class="mb-4" hx-include="#evidences" hx-target="table">
+				<button hx-put="/wwcr" class="h-8 bg-lime-500 text-white font-bold px-5">
+					Save
+				</button>
+			</div>
+			<form id="evidences" class="border border-slate-500 w-96 h-96 overflow-auto p-2">
+				<table class="w-full">
+					{array.map((group) => (
+						<GroupedEvidencesEditor group={group} />
+					))}
+				</table>
+				{html`
+					<script>
+						document.querySelectorAll('tbody.group-header').forEach((elm) => {
+							elm.addEventListener('click', (e) => {
+								if (elm.nextSibling.classList.contains('hidden')) {
+									elm.nextSibling.classList.remove('hidden')
+								} else {
+									elm.nextSibling.classList.add('hidden')
+								}
+							});
+						});
+					</script>
+				`}
+			</form>
+		</Layout>
+	);
+}).put(async (c) => {
+	const body = await c.req.parseBody();
+	const keys = Object.keys(body);
+	const ids = keys.map(k => parseInt(k.substring(1)))
+	console.log(JSON.stringify(ids));
+	const sql = 'UPDATE acm_batches SET wwcr_evidences=? WHERE id=?';
+	await c.env.DB.prepare(sql).bind(JSON.stringify(ids), 'abc').run();
+	return c.html(
+		<tr>
+			<td>1</td>
+			<td>2</td>
+			<td>3</td>
+		</tr>
+	);
+})
+
+app.get('/wwcr/test', async (c) => {
+	const sql = 'SELECT json(wwcr_evidences) ids FROM acm_batches WHERE id=?';
+	const rs: any = await c.env.DB.prepare(sql).bind('abc').first();
+	const ids = rs.ids;
+	const groups = getGroupedEvidences(ids);
+	return c.html(
+		<Layout>
+			<table id="table" class="">
+				{groups.map((g) => (
+					<GroupedEvidencesView group={g} />
+				))}
+			</table>
+			{html`
+				<script>
+					document.querySelectorAll('input[type=radio]').forEach((elm) => {
+						let id = elm.getAttribute('name');
+						elm.addEventListener('change', (e) => {
+							// console.log(elm.checked);
+							document.getElementById(id).innerText = elm.value;
+							document.getElementById(id).classList.remove('text-slate-300');
+						});
+					});
+				</script>
+			`}
+		</Layout>
+	);
+})
+
+/////////////////////////
 export default app;

@@ -34,13 +34,13 @@ type ACMElement = {
 	updated?: string,
 }
 type Evidence = {
-	id: number,
-	element_id: number,
-	name: string,
-	definition?: string,
-	description?: string,
-	created?: string,
-	updated?: string,
+	id: number;
+	element_id: number;
+	name: string;
+	definition?: string;
+	description?: string;
+	created?: string;
+	updated?: string;
 }
 type Book = {
 	id: string;
@@ -97,4 +97,16 @@ type AspectElement = {
 	tool: string;
 	created?: string;
 	updated?: string;
+}
+//
+type SimpleItem = {
+	id: string | number;
+	name: string;
+	definition?: string;
+	description?: string;
+}
+type EvidencesGroup = {
+	element_id: number;
+	element: string;
+	items: SimpleItem[];
 }

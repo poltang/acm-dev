@@ -1,6 +1,6 @@
 import { html } from "hono/html";
 import { ulidFactory } from "ulid-workers";
-import { DOMAINS } from "./constants";
+import { DOMAINS, InterviewGroupedEvidences } from "./constants";
 
 const ulid = ulidFactory();
 
@@ -534,3 +534,64 @@ export const AddAspectForm = ({ competence_id }: { competence_id: string }) => {
 		</form>
 	);
 };
+
+// Batch interview
+
+// ["C48","C49","C54","C55","C57","C59","C60","C61","C62","C65","C66","C76","C78","C80"]
+// [48,49,54,55,57,59,60,61,62,65,66,76,78,80]
+
+export const GroupedEvidencesEditor = ({ group }: { group: EvidencesGroup }) => (
+	<>
+		<tbody class="group-header">
+			<tr class="border-b border-lime-500 cursor-pointer">
+				<td colspan="3" class="bg-lime-400 font-semibold px-2 py-1">
+					{group.element}
+				</td>
+			</tr>
+		</tbody>
+		<tbody class="hidden">
+			{group.items.map((item) => (
+				<tr class="text-sm">
+					<td>{item.id}</td>
+					<td class="py-1">
+						<label for={`C${item.id}`} class="block hover:text-lime-700 cursor-pointer">
+							{item.name}
+						</label>
+					</td>
+					<td>
+						<input id={`C${item.id}`} name={`C${item.id}`} type="checkbox" value="0" />
+					</td>
+				</tr>
+			))}
+		</tbody>
+	</>
+);
+
+export const GroupedEvidencesView = ({ group }: { group: EvidencesGroup }) => (
+	<tbody>
+		<tr>
+			<td colspan="3" class="bg-lime-400 font-semibold px-2 py-1">
+				{group.element}
+			</td>
+		</tr>
+		{group.items.map((item) => (
+			<tr class="text-sm">
+				{/* <td class="px-2">{item.id}</td> */}
+				<td class="px-2 py-1">
+					<label class="block hover:text-lime-700">{item.name}</label>
+				</td>
+				<td class="flex gap-1 py-1">
+					{/* <input id={`C${item.id}`} name={`C${item.id}`} type="checkbox" value="0" /> */}
+					{/* <input type="number" name={`C${item.id}`} min="1" max="3" value="0" class="p-1" /> */}
+					<input type="radio" name={`C${item.id}`} value="1" class="border-gray-300 hover:border-gray-500" />
+					<input type="radio" name={`C${item.id}`} value="2" class="border-gray-300 hover:border-gray-500" />
+					<input type="radio" name={`C${item.id}`} value="3" class="border-gray-300 hover:border-gray-500" />
+				</td>
+				<td class="text-black text-slate-300 font-semibold px-2" id={`C${item.id}`}>
+					0
+				</td>
+			</tr>
+		))}
+	</tbody>
+);
+
